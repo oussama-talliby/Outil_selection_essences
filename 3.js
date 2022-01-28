@@ -16,13 +16,13 @@ function update_data(data,filters){
 									if(parseFloat(data[i][prop])>=3){
 										
 										data[i][prop]=1;
-									}else if(2.5=<parseFloat(data[i][prop])<3){
+									}else if((parseFloat(data[i][prop])>=2.5)&&(parseFloat(data[i][prop])<3)){
 										data[i][prop]=2;
 				
-									}else if(2=<parseFloat(data[i][prop])<2.5){
+									}else if((parseFloat(data[i][prop])>=2)&&(parseFloat(data[i][prop])<2.5)){
 										data[i][prop]=3;
 				
-									}else if (1=<parseFloat(data[i][prop])<2){
+									}else if ((parseFloat(data[i][prop])>=1)&&(parseFloat(data[i][prop])<2)){
 										data[i][prop]=4;
 									}else if (parseFloat(data[i][prop])<1) {
 										data[i][prop]=5;
@@ -43,7 +43,7 @@ function update_data(data,filters){
 						     break;
 						    case' Moyen':
 						    case 'Modéré':
-						    case 'Neutre'
+						    case 'Neutre':
 						     data[i][prop]=2;
 						     break;
 						    case 'limité':
@@ -96,46 +96,46 @@ function build_default_input_and_weights(description){
                   	const nbr_choice=lenght(description[i]['Réponses']);
 			
 				     default_inputs.push({
-				     	key:description[i].name;
-				     	value:0;
+				     	key:description[i].nom,
+				     	value:0,
 				     });
 				     weight.push({
-				     	key:description[i].name;
-				     	value:get_weight(description[i].importance);
+				     	key:description[i].nom,
+				     	value:get_weight(description[i].importance),
 
 				     })
 
 				     break;
 				case '':
 				     const nbr_choice=lenght(description[i]['Réponses']);
-					 if (description[i].name=='Indice de confiance'){
+					 if (description[i].nom=='Indice de confiance'){
 					 	value_def=5;
 					 }else{
 					 	value_def=1;
 					 };
 				     default_inputs.push({
-				     	key:description[i].name;
-				     	value: value_def;
+				     	key:description[i].nom,
+				     	value: value_def,
 				     });
-				     default_var.push(description[i].name);
+				     default_var.push(description[i].nom);
 				     weight.push({
-				     	key:description[i].name;
-				     	value:get_weight(description[i].importance);
+				     	key:description[i].nom,
+				     	value:get_weight(description[i].importance),
 
 				     })
 				     break;
 				default:
 				     for (const choix in description[i]['Réponses']){
  
-				       let name=get_name(choix)[0];
+				       let nom=get_name(choix)[0];
 				       default_inputs.push({
-					     	key:name;
-					     	value:false;
+					     	key:nom,
+					     	value:false,
 					
 					     });
 				       weight.push({
-				     	key:name;
-				     	value:get_weight(description[i].importance);
+				     	key:nom,
+				     	value:get_weight(description[i].importance),
 
 				     });
 		            };
@@ -155,14 +155,7 @@ function update_prop(prop,input,default_inputs){
 	if (input[prop].length==1){
 		default_inputs[prop]=parseInt(input[prop]);
 	};
-	switch (input[prop]){
-		case 'true':
-		    default_inputs[prop]=true;
-		    break;
-		case 'false':
-		    default_inputs[prop]=false;
-		    break;
-     };
+	
      return default_inputs;
     
 };
@@ -193,26 +186,25 @@ function compute_score(inputs_updated,prop,data_updated,i,weight){
     	data_updated[i][prop]=inputs_updated[prop]
     }
 
-    if(data_updated[i][prop].isInteger()){
+    if(Number.isInteger(data_updated[i][prop])){
 
-             switch (inputs_updated[prop]-data_updated[i][prop]){
+             switch (Math.abs(inputs_updated[prop]-data_updated[i][prop])){
 
 					case number_choice_prop-1:
-
-					   score=0;
-					   break;
+						score=0;
+						break;
 					default:
-					   score=weight[pop]*Math.pow(1/2,inputs_updated[prop]-data_updated[i][prop])};
-					break;}
+						score=weight[pop]*Math.pow(1/2,Math.abs(inputs_updated[prop]-data_updated[i][prop]))};
+						break;
+					}
 
      
-
-    }else{
+    } else {
 
     	if(inputs_updated[prop]==data_updated[i][prop]){
-    		score=weight[prop]
+    		score=weight[prop];
     	}else{
-    		score=0
+    		score=0;
     	}
     }
 	return score;
@@ -239,7 +231,7 @@ for (let i=0;i<n_arbre;i++){
     let score =0;
     let bloqued=false;
 	for (const fil in filters_input){
-		if !(bloqued){
+		if (!(bloqued)){
 				if (weight[fil] == 'bloquant'){
 		
 					if(inputs_updated[fil]!=data_updated[i][fil]){
@@ -251,7 +243,7 @@ for (let i=0;i<n_arbre;i++){
 
 
 	};
-	if !(bloqued){
+	if (!(bloqued)){
 	   arbre_non_bloque.push(i);
        scores.push(score/sum_weights);
        	}
