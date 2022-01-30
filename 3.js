@@ -197,9 +197,9 @@ function compute_score(inputs_updated,prop,data_updated,i,weight){
 						score=weight[pop]*Math.pow(1/2,Math.abs(inputs_updated[prop]-data_updated[i][prop]))};
 						break;
 					}
-
      
-    } else {
+    } 
+	if(!(Number.isInteger(data_updated[i][prop]))){
 
     	if(inputs_updated[prop]==data_updated[i][prop]){
     		score=weight[prop];
