@@ -1,11 +1,12 @@
 var mydata = require('./ex.json');
-var input = require('./input.json');
+var input1 = require('./input.json');
 var description=require('./description.json');
+console.log(description[0]['reponses'][0])
 
 /********************************************************************************/
 
 function update_data(data,filters){
-	const n_arbre=lenght(data);
+	const n_arbre=data.lenght;
 	
     for (var i=0;i<n_arbre ;i++){
 
@@ -89,12 +90,18 @@ function build_default_input_and_weights(description){
     let default_inputs=[];
     let weight=[];
     let default_var=[];
-    const nbr_prop=lenght(description);
+	let n_choice=[];
+	console.log(description.length)
+    const nbr_prop=description.length;
     for (var i=0;i<nbr_prop;i++){
-    	switch (description[i]['Type de question']){
+		console.log(i)
+    	switch (description[i]['type_question']){
                 case 'Select':
-                  	const nbr_choice=lenght(description[i]['Réponses']);
-			
+                  	
+			         n_choice.push({
+						key:description[i].nom,
+				     	value:description[i]['reponses'].length,
+					 });
 				     default_inputs.push({
 				     	key:description[i].nom,
 				     	value:0,
@@ -107,7 +114,10 @@ function build_default_input_and_weights(description){
 
 				     break;
 				case '':
-				     const nbr_choice=lenght(description[i]['Réponses']);
+					n_choice.push({
+						key:description[i].nom,
+				     	value:description[i]['reponses'].length,
+					 });
 					 if (description[i].nom=='Indice de confiance'){
 					 	value_def=5;
 					 }else{
@@ -125,7 +135,7 @@ function build_default_input_and_weights(description){
 				     })
 				     break;
 				default:
-				     for (const choix in description[i]['Réponses']){
+				     for (const choix in description[i]['reponses']){
  
 				       let nom=get_name(choix)[0];
 				       default_inputs.push({
@@ -133,6 +143,10 @@ function build_default_input_and_weights(description){
 					     	value:false,
 					
 					     });
+						 n_choice.push({
+							key:nom,
+							 value:2,
+						 });
 				       weight.push({
 				     	key:nom,
 				     	value:get_weight(description[i].importance),
@@ -143,7 +157,7 @@ function build_default_input_and_weights(description){
 
 
 
-    return [default_inputs, weight,default_var];
+    return [default_inputs, weight,default_var,n_choice];
 	};
 /************************/
 
@@ -160,15 +174,15 @@ function update_prop(prop,input,default_inputs){
     
 };
 
-function delete_non_input(input){
-	const l=lenght(input);
-	for (var i=0;i<l;i++){
-		if (Object.values(input[i])==''){
-			    input.splice(i,1); 
+function delete_non_input(input = {}){
+	const props=Object.keys(input);
+	for (const prop in props){
+		if ((input[prop]=='')||(input[prop]==false)){
+			    delete input[prop]; 
 		};
     };
     return  input;
-}
+};
 function update_input(input,default_inputs,filters){
     
      for (const prop in filters){
@@ -181,24 +195,26 @@ function update_input(input,default_inputs,filters){
 
 /************************/
 
-function compute_score(inputs_updated,prop,data_updated,i,weight){
+function compute_score(inputs_updated,prop,data_updated,i,weight,n_choice){
     if ((prop=='Tolérance pour le pH du sol') && (data_updated[i][prop]==1)){
     	data_updated[i][prop]=inputs_updated[prop]
     }
-
+	console.log("1")
+    console.log(data_updated);
     if(Number.isInteger(data_updated[i][prop])){
+		     const number_choice_prop=n_choice[prop];
 
-             switch (Math.abs(inputs_updated[prop]-data_updated[i][prop])){
+             if(Math.abs(inputs_updated[prop]-data_updated[i][prop])==number_choice_prop-1){
+				score=0;
 
-					case number_choice_prop-1:
-						score=0;
-						break;
-					default:
-						score=weight[pop]*Math.pow(1/2,Math.abs(inputs_updated[prop]-data_updated[i][prop]))};
-						break;
+						}
+			else{
+				score=weight[pop]*Math.pow(1/2,Math.abs(inputs_updated[prop]-data_updated[i][prop]))};
+						
 					}
      
     } 
+	
 	if(!(Number.isInteger(data_updated[i][prop]))){
 
     	if(inputs_updated[prop]==data_updated[i][prop]){
@@ -211,12 +227,12 @@ function compute_score(inputs_updated,prop,data_updated,i,weight){
 }
 
 /************************/
-let input=delete_non_input(input);
-let [default_inputs, weight,default_var]=build_default_input_and_weights(description);
+console.log("1")
+let [default_inputs, weight,default_var,n_choice]=build_default_input_and_weights(description);
+let input=delete_non_input(input1);
 let filters_input=Object.keys(input);
 let filters=Object.keys(default_inputs);
 var data_updated=update_data(mydata,filters);
-
 //on ajoute les variables dont on entre input par défaut 
 filters_input=filters_input.concat(default_var);
 let inputs_updated=update_input(input,default_inputs,filters_input);
@@ -237,7 +253,7 @@ for (let i=0;i<n_arbre;i++){
 					if(inputs_updated[fil]!=data_updated[i][fil]){
 						bloqued=true;}
 				}else{
-					score+=compute_score(inputs_updated,prop,data_updated,i,weight);
+					score+=compute_score(inputs_updated,prop,data_updated,i,weight,n_choice);
 				}
 			}
 
