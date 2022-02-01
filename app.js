@@ -3,6 +3,7 @@ const app = express();
 const bodyParser = require("body-parser");
 const gsheet = require("./gsheet.js")
 const utils = require("./utils");
+const config = require('./config.json')
 //-------------------------------------------------------------------------------------------------------------------------
 //-------------------------------------------- Paramétrages de base -------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------------------------
@@ -34,8 +35,9 @@ app.post('/update_filtres', (req, res) => {
 
 // ========================== Filtres =============================
 app.get('/data/filtres', (req, res)=>{
-    const p = gsheet.getData(gsheet.client, `'Paramétrages critères'!A:Q`);
+    const p = gsheet.getData(gsheet.client, `'${config.filter_spreadsheet}'!A:Q`);
     p.then((value)=>{
+        value.shift();
         liste_criteres=[];
         for (let i = 1; i < value[0].length; i++) {
             if (value[2][i] == 'TRUE'){
@@ -69,22 +71,33 @@ app.get('/data/filtres', (req, res)=>{
 
 // ==================== /data/arbres =================
 app.get('/data/arbres', (req, res)=>{
-    const param = req.query.id;
-    console.log(param);
-    gsheet.getData(gsheet.client, `'Tableau des essences'!A4:4`)
+    const param_id = req.query.id;
+    const param_page = req.query.page;
+    gsheet.getData(gsheet.client, `'${config.data_spreadsheet}'!${config.data_row_offset}${config.data_column_names_row}:${config.data_column_names_row}`)
     .then((colnames)=>{
         ncols = colnames[0].length
         lastColumn = utils.columnToLetter(ncols)
-        gsheet.getData(gsheet.client, `'Tableau des essences'!A6:${lastColumn}358`)
+        gsheet.getData(gsheet.client, `'${config.data_spreadsheet}'!${config.data_row_offset}${config.data_start_row}:${lastColumn}`)
         .then((values)=>{
             let response = []
-            for (let i = 0; i < values.length; i++) {
-                if (!param || (param && param == `${values[i][1].trim()} ${values[i][2].trim()}`)) {
+            if (param_page) {
+                const page = parseInt(param_page);
+                for (let i = (page-1)*10; i < Math.min(page*10, values.length); i++) {
                     let val = {}
                     for(let j=0; j<ncols-1; j++){
                         val[colnames[0][j]]=values[i][j]
                     }
-                    response.push(val)
+                    response.push(val);
+                }
+            } else {
+                for (let i = 0; i < values.length; i++) {
+                    if (!param_id || (param_id && param_id == `${values[i][1].trim()} ${values[i][2].trim()}`)) {
+                        let val = {}
+                        for(let j=0; j<ncols-1; j++){
+                            val[colnames[0][j]]=values[i][j]
+                        }
+                        response.push(val)
+                    }
                 }
             }
             res.send(response)
@@ -94,21 +107,60 @@ app.get('/data/arbres', (req, res)=>{
         })
     })
     .catch((err)=>{
-        console.log(err)
+        res.status(500).send("Erreur de connexion à ggsheet")
     })
 })
 // =====================================================
 
 // ==================== /data/columns ==================
-app.get('/data/columns', (req, res)=>{
-    gsheet.getData(gsheet.client, `'Tableau des essences'!A4:4`)
+app.get('/data/colonnes', (req, res)=>{
+    gsheet.getData(gsheet.client, `'${config.data_spreadsheet}'!${config.data_row_offset}${config.data_column_names_row}:${config.data_column_names_row}`)
     .then((colnames)=>{
         colnames[0].pop()
         res.send(colnames[0])
     })
     .catch((err)=>{
-        console.log(err)
+        res.status(500).send("Erreur récupération des colonnes")
     })
 })
-// ===================================================
+// ======================================================
+
+// ==================== /data/legendes ==================
+app.get('/data/legendes', (req, res)=>{
+    gsheet.getData(gsheet.client,`'${config.legend_spreadsheet}'!A1:B`)
+    .then((legendes)=>{
+        let newAttr = true
+        let curentAttr = ""
+        result = {}
+        for(let i=0; i<legendes.length; i++){
+                if(newAttr){
+                    curentAttr = legendes[i][0]
+                    result[curentAttr]={
+                        description:"",
+                        values:{
+                        }
+                    }
+                    if(legendes[i].length>=2){
+                        result[curentAttr]["description"]=legendes[i][1]
+                    }
+                    else{
+                        result[curentAttr]["description"]=null
+                    }
+                    newAttr=false
+                }
+                else if(legendes[i].length==0){
+                    newAttr=true
+                }
+                else{
+                    result[curentAttr]["values"][legendes[i][0]]=legendes[i][1]
+                }
+
+        }
+        res.send(result)
+    })
+    .catch((err)=>{
+        res.status(500).send("Erreur parsing des données de légende")
+    })
+})
+// ================================================
 module.exports = app;
