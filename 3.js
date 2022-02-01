@@ -2,7 +2,7 @@ var mydata = require('./ex.json');
 var input1 = require('./input.json');
 var description=require('./description.json');
 console.log(description[0]['reponses'][0])
-
+const n_arbre=mydata.lenght;
 /********************************************************************************/
 
 function update_data(data,filters){
@@ -91,72 +91,75 @@ function build_default_input_and_weights(description){
     let weight=[];
     let default_var=[];
 	let n_choice=[];
-	console.log(description.length)
+	
     const nbr_prop=description.length;
+	console.log(description[0]['type_question']);
     for (var i=0;i<nbr_prop;i++){
-		console.log(i)
+		
     	switch (description[i]['type_question']){
-                case 'Select':
-                  	
-			         n_choice.push({
-						key:description[i].nom,
-				     	value:description[i]['reponses'].length,
-					 });
-				     default_inputs.push({
-				     	key:description[i].nom,
-				     	value:0,
-				     });
-				     weight.push({
-				     	key:description[i].nom,
-				     	value:get_weight(description[i].importance),
+			case 'Select':
+				
+				n_choice.push({
+					key:description[i].nom,
+					value:description[i]['reponses'].length,
+				});
+				default_inputs.push({
+					key:description[i].nom,
+					value:0,
+				});
+				weight.push({
+					key:description[i].nom,
+					value:get_weight(description[i].importance),
 
-				     })
+				})
 
-				     break;
-				case '':
-					n_choice.push({
-						key:description[i].nom,
-				     	value:description[i]['reponses'].length,
-					 });
-					 if (description[i].nom=='Indice de confiance'){
-					 	value_def=5;
-					 }else{
-					 	value_def=1;
-					 };
-				     default_inputs.push({
-				     	key:description[i].nom,
-				     	value: value_def,
-				     });
-				     default_var.push(description[i].nom);
-				     weight.push({
-				     	key:description[i].nom,
-				     	value:get_weight(description[i].importance),
+				break;
+			case '':
+				n_choice.push({
+					key:description[i].nom,
+					value:description[i]['reponses'].length,
+				});
+				if (description[i].nom=='Indice de confiance'){
+					value_def=5;
+				}else{
+					value_def=1;
+				};
+				default_inputs.push({
+					key:description[i].nom,
+					value: value_def,
+				});
+				default_var.push(description[i].nom);
+				weight.push({
+					key:description[i].nom,
+					value:get_weight(description[i].importance),
 
-				     })
-				     break;
-				default:
-				     for (const choix in description[i]['reponses']){
- 
-				       let nom=get_name(choix)[0];
-				       default_inputs.push({
-					     	key:nom,
-					     	value:false,
-					
-					     });
-						 n_choice.push({
+				})
+				 break;
+		default:
+			const nb_choix=description[i]['reponses'].length;
+            for (var j=0;j<nb_choix;j++){
+
+                       let nom=description[i]['reponses'][j].valeur;
+						default_inputs.push({
+								key:nom,
+								value:false,
+						
+							});
+							n_choice.push({
+								key:nom,
+								value:2,
+							});
+						weight.push({
 							key:nom,
-							 value:2,
-						 });
-				       weight.push({
-				     	key:nom,
-				     	value:get_weight(description[i].importance),
+							value:get_weight(description[i].importance),
 
-				     });
-		            };
-		            break;};
+						});
+				  };
+			break;}
+						};
 
 
-
+					console.log(default_inputs)
     return [default_inputs, weight,default_var,n_choice];
 	};
 /************************/
@@ -174,7 +177,7 @@ function update_prop(prop,input,default_inputs){
     
 };
 
-function delete_non_input(input = {}){
+function delete_non_input(input ){
 	const props=Object.keys(input);
 	for (const prop in props){
 		if ((input[prop]=='')||(input[prop]==false)){
@@ -224,7 +227,7 @@ function compute_score(inputs_updated,prop,data_updated,i,weight,n_choice){
     	}
     }
 	return score;
-}
+};
 
 /************************/
 console.log("1")
